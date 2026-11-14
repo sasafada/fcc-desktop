@@ -30,9 +30,6 @@ android {
     }
     kotlinOptions { jvmTarget = "17" }
 
-    // rootfs.tar.gz precisa ficar sem compressão para openFd() funcionar e para ser rápido.
-    androidResources { noCompress += listOf("gz") }
-
     packaging {
         // Necessário: proot precisa existir como arquivo real em nativeLibraryDir.
         jniLibs { useLegacyPackaging = true }

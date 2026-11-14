@@ -100,4 +100,11 @@ sudo rm -rf "$R"/var/lib/apt/lists/* "$R"/root/.cache "$R"/tmp/* "$R"/var/log/*.
 cleanup; trap - EXIT
 
 sudo tar --one-file-system -C "$R" -cf - . | gzip -6 > "$ASSETS/rootfs.tar.gz"
-ls -lh "$ASSETS/rootfs.tar.gz" "$JNI"
+
+# O Android transforma o .tar.gz em um asset TAR chamado rootfs.tar.
+# Guardamos o tamanho descomprimido para calcular o progresso da extração.
+gzip -l "$ASSETS/rootfs.tar.gz" | awk 'NR==2 {print $2}' > "$ASSETS/rootfs.tar.size"
+test -s "$ASSETS/rootfs.tar.size"
+test "$(cat "$ASSETS/rootfs.tar.size")" -gt 0
+
+ls -lh "$ASSETS/rootfs.tar.gz" "$ASSETS/rootfs.tar.size" "$JNI"

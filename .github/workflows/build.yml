@@ -57,6 +57,7 @@ jobs:
       - name: Verificar arquivos ARM64 e rootfs
         run: |
           test -s app/src/main/assets/rootfs.tar.gz
+          test -s app/src/main/assets/rootfs.tar.size
           test -s app/src/main/jniLibs/arm64-v8a/libproot.so
           test -s app/src/main/jniLibs/arm64-v8a/libproot-loader.so
           test -s app/src/main/jniLibs/arm64-v8a/libtalloc.so
