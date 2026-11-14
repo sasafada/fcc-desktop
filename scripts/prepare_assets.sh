@@ -101,10 +101,13 @@ cleanup; trap - EXIT
 
 sudo tar --one-file-system -C "$R" -cf - . | gzip -6 > "$ASSETS/rootfs.tar.gz"
 
-# O Android transforma o .tar.gz em um asset TAR chamado rootfs.tar.
-# Guardamos o tamanho descomprimido para calcular o progresso da extração.
-gzip -l "$ASSETS/rootfs.tar.gz" | awk 'NR==2 {print $2}' > "$ASSETS/rootfs.tar.size"
+# O aplicativo extrai um TAR sem gzip através do AssetManager.
+gzip -dc "$ASSETS/rootfs.tar.gz" > "$ASSETS/rootfs.tar"
+stat -c %s "$ASSETS/rootfs.tar" > "$ASSETS/rootfs.tar.size"
+rm "$ASSETS/rootfs.tar.gz"
+
+test -s "$ASSETS/rootfs.tar"
 test -s "$ASSETS/rootfs.tar.size"
 test "$(cat "$ASSETS/rootfs.tar.size")" -gt 0
 
-ls -lh "$ASSETS/rootfs.tar.gz" "$ASSETS/rootfs.tar.size" "$JNI"
+ls -lh "$ASSETS/rootfs.tar" "$ASSETS/rootfs.tar.size" "$JNI"

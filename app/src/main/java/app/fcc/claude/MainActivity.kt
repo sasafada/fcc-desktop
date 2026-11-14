@@ -4,11 +4,14 @@ import android.app.Activity
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
+import android.os.Build
+import android.os.SystemClock
 import android.os.Handler
 import android.os.Looper
 import android.util.TypedValue
@@ -31,6 +34,8 @@ import com.termux.terminal.TerminalSessionClient
 import com.termux.view.TerminalView
 import com.termux.view.TerminalViewClient
 import java.io.File
+import java.net.InetSocketAddress
+import java.net.Socket
 import java.util.Properties
 import kotlin.concurrent.thread
 
@@ -62,7 +67,7 @@ class MainActivity : Activity(), TerminalViewClient, TerminalSessionClient {
         fontSizePx = dp(14)
         applyTerminalColors()
         setContentView(buildUi())
-        if (Rootfs.isReady(this)) startTerminal() else startExtraction()
+        if (Rootfs.isReady(this)) startServerAndTerminal() else startExtraction()
     }
 
     // ------------------------------------------------------------------ UI
@@ -121,7 +126,14 @@ class MainActivity : Activity(), TerminalViewClient, TerminalSessionClient {
         retryBtn = Button(this).apply {
             text = "Tentar novamente"
             visibility = View.GONE
-            setOnClickListener { visibility = View.GONE; startExtraction() }
+            setOnClickListener {
+                visibility = View.GONE
+                if (Rootfs.isReady(this@MainActivity)) {
+                    startServerAndTerminal(restart = true)
+                } else {
+                    startExtraction()
+                }
+            }
         }
         setupBox.addView(retryBtn)
         center.addView(setupBox, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
@@ -234,13 +246,80 @@ class MainActivity : Activity(), TerminalViewClient, TerminalSessionClient {
                         statusText.text = "Extraindo o ambiente… ${(f * 100).toInt()}%"
                     }
                 }
-                ui.post { startTerminal() }
+                ui.post { startServerAndTerminal() }
             } catch (e: Throwable) {
                 ui.post {
                     statusText.text = "Falha ao preparar: ${e.javaClass.simpleName}: ${e.message}"
                     retryBtn.visibility = View.VISIBLE
                 }
             }
+        }
+    }
+
+    // ------------------------------------------------------------------ Inicialização do servidor
+    private var serverCheck: Runnable? = null
+
+    private fun startServerAndTerminal(restart: Boolean = false) {
+        serverCheck?.let { ui.removeCallbacks(it) }
+        setupBox.visibility = View.VISIBLE
+        terminalView.visibility = View.GONE
+        retryBtn.visibility = View.GONE
+        statusText.text = "Iniciando FCC Server…"
+
+        val intent = Intent(this, FccServerService::class.java).apply {
+            action = if (restart) FccServerService.ACTION_RESTART
+                     else FccServerService.ACTION_START
+        }
+
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(intent)
+            } else {
+                startService(intent)
+            }
+        } catch (e: Exception) {
+            statusText.text = "Não foi possível iniciar o servidor: ${e.message}"
+            retryBtn.visibility = View.VISIBLE
+            return
+        }
+
+        val startedAt = SystemClock.elapsedRealtime()
+        val check = object : Runnable {
+            override fun run() {
+                if (isFinishing) return
+
+                if (isServerPortOpen()) {
+                    serverCheck = null
+                    statusText.text = "Servidor pronto. Abrindo FCC Claude…"
+                    startTerminal()
+                    return
+                }
+
+                if (SystemClock.elapsedRealtime() - startedAt >= 60_000L) {
+                    serverCheck = null
+                    statusText.text =
+                        "FCC Server não respondeu na porta 8082. Verifique e tente novamente."
+                    retryBtn.visibility = View.VISIBLE
+                    return
+                }
+
+                statusText.text = "Aguardando FCC Server…"
+                ui.postDelayed(this, 500)
+            }
+        }
+
+        serverCheck = check
+        ui.post(check)
+    }
+
+    private fun isServerPortOpen(): Boolean {
+        return try {
+            Socket().use {
+                it.connect(InetSocketAddress("127.0.0.1", 8082), 400)
+            }
+            true
+        } catch (_: Exception) {
+            false
         }
     }
 
@@ -293,6 +372,8 @@ class MainActivity : Activity(), TerminalViewClient, TerminalSessionClient {
     }
 
     override fun onDestroy() {
+        serverCheck?.let { ui.removeCallbacks(it) }
+        serverCheck = null
         session?.finishIfRunning()
         super.onDestroy()
     }
