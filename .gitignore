@@ -1,0 +1,6 @@
+.work/
+build/
+.gradle/
+local.properties
+app/src/main/assets/rootfs.tar.gz
+app/src/main/jniLibs/
