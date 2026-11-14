@@ -42,7 +42,7 @@ class FccServerService : Service() {
         val notification = Notification.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_notify_sync)
             .setContentTitle("FCC Server")
-            .setContentText("Mantendo o servidor local ativo na porta 8082")
+            .setContentText("Mantendo o servidor local ativo na porta 8083")
             .setOngoing(true)
             .setCategory(Notification.CATEGORY_SERVICE)
             .build()
@@ -140,7 +140,7 @@ class FccServerService : Service() {
             "-b", "${tmp.path}:/tmp", "-b", "${tmp.path}:/dev/shm",
             "-w", "/root",
             "/usr/bin/env", "-i",
-            "HOME=/root", "USER=root", "LANG=C.UTF-8",
+            "HOME=/root", "USER=root", "LANG=C.UTF-8", "PORT=8083",
             "TERM=xterm-256color", "COLORTERM=truecolor", "PATH=$path",
             "/bin/bash", "-c", "exec /root/.local/bin/fcc-server"
         )

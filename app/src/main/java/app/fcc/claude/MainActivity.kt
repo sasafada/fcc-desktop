@@ -298,7 +298,7 @@ class MainActivity : Activity(), TerminalViewClient, TerminalSessionClient {
                 if (SystemClock.elapsedRealtime() - startedAt >= 60_000L) {
                     serverCheck = null
                     statusText.text =
-                        "FCC Server não respondeu na porta 8082. Verifique e tente novamente."
+                        "FCC Server não respondeu na porta 8083. Verifique e tente novamente."
                     retryBtn.visibility = View.VISIBLE
                     return
                 }
@@ -315,7 +315,7 @@ class MainActivity : Activity(), TerminalViewClient, TerminalSessionClient {
     private fun isServerPortOpen(): Boolean {
         return try {
             Socket().use {
-                it.connect(InetSocketAddress("127.0.0.1", 8082), 400)
+                it.connect(InetSocketAddress("127.0.0.1", 8083), 400)
             }
             true
         } catch (_: Exception) {
@@ -357,7 +357,7 @@ class MainActivity : Activity(), TerminalViewClient, TerminalSessionClient {
             "-b", "${tmp.path}:/tmp", "-b", "${tmp.path}:/dev/shm",
             "-w", "/root",
             "/usr/bin/env", "-i",
-            "HOME=/root", "USER=root", "LANG=C.UTF-8",
+            "HOME=/root", "USER=root", "LANG=C.UTF-8", "PORT=8083",
             "TERM=xterm-256color", "COLORTERM=truecolor", "PATH=$path",
             "/bin/bash", "-c", "exec /root/.local/bin/fcc-claude"
         )
