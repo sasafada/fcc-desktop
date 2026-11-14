@@ -142,7 +142,7 @@ class FccServerService : Service() {
             "/usr/bin/env", "-i",
             "HOME=/root", "USER=root", "LANG=C.UTF-8",
             "TERM=xterm-256color", "COLORTERM=truecolor", "PATH=$path",
-            "/bin/bash", "-lc", "exec fcc-server"
+            "/bin/bash", "-c", "exec /root/.local/bin/fcc-server"
         )
 
         val process = ProcessBuilder(args)

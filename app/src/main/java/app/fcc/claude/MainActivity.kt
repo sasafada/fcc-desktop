@@ -359,7 +359,7 @@ class MainActivity : Activity(), TerminalViewClient, TerminalSessionClient {
             "/usr/bin/env", "-i",
             "HOME=/root", "USER=root", "LANG=C.UTF-8",
             "TERM=xterm-256color", "COLORTERM=truecolor", "PATH=$path",
-            "/bin/bash", "-lc", "fcc-claude"
+            "/bin/bash", "-c", "exec /root/.local/bin/fcc-claude"
         )
         val env = arrayOf(
             "PROOT_TMP_DIR=${tmp.path}",
