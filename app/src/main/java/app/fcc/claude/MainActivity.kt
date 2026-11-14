@@ -128,6 +128,8 @@ class MainActivity : Activity(), TerminalViewClient, TerminalSessionClient {
 
         terminalView = TerminalView(this, null).apply {
             setTerminalViewClient(this@MainActivity)
+            isFocusable = true
+            isFocusableInTouchMode = true
             setTextSize(fontSizePx)
             setTypeface(Typeface.MONOSPACE)
             keepScreenOn = true
@@ -154,6 +156,7 @@ class MainActivity : Activity(), TerminalViewClient, TerminalSessionClient {
         key("ESC") { send("\u001b") }
         key("TAB") { send("\t") }
         ctrlBtn = key("CTRL") { setCtrl(!ctrlOn) }
+        key("TECLADO") { toggleKeyboard() }
         key("←") { send("\u001b[D") }
         key("↑") { send("\u001b[A") }
         key("↓") { send("\u001b[B") }
@@ -185,6 +188,31 @@ class MainActivity : Activity(), TerminalViewClient, TerminalSessionClient {
     }
 
     private fun send(s: String) { session?.write(s) }
+
+    private fun showKeyboard() {
+        terminalView.post {
+            if (terminalView.visibility != View.VISIBLE) return@post
+            terminalView.requestFocus()
+            val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            imm.showSoftInput(terminalView, InputMethodManager.SHOW_IMPLICIT)
+        }
+    }
+
+    private fun toggleKeyboard() {
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        val visible = if (android.os.Build.VERSION.SDK_INT >= 30) {
+            window.decorView.rootWindowInsets
+                ?.isVisible(android.view.WindowInsets.Type.ime()) == true
+        } else {
+            false
+        }
+
+        if (visible) {
+            imm.hideSoftInputFromWindow(terminalView.windowToken, 0)
+        } else {
+            showKeyboard()
+        }
+    }
 
     private fun pasteFromClipboard() {
         val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
@@ -224,6 +252,7 @@ class MainActivity : Activity(), TerminalViewClient, TerminalSessionClient {
         session = s
         terminalView.attachSession(s)
         terminalView.requestFocus()
+        showKeyboard()
     }
 
     private fun restartSession() {
@@ -296,9 +325,7 @@ class MainActivity : Activity(), TerminalViewClient, TerminalSessionClient {
         return scale
     }
     override fun onSingleTapUp(e: MotionEvent) {
-        terminalView.requestFocus()
-        (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
-            .showSoftInput(terminalView, 0)
+        showKeyboard()
     }
     override fun shouldBackButtonBeMappedToEscape() = false
     override fun shouldEnforceCharBasedInput() = true
