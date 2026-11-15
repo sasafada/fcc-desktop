@@ -23,9 +23,9 @@ android {
         create("fcc") {
             storeFile = rootProject.file("fcc.p12")
             storeType = "pkcs12"
-            storePassword = "fccclaude"
+            storePassword = System.getenv("FCC_STORE_PASSWORD") ?: ""
             keyAlias = "fcc"
-            keyPassword = "fccclaude"
+            keyPassword = System.getenv("FCC_KEY_PASSWORD") ?: ""
         }
     }
 
