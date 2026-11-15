@@ -11,16 +11,28 @@ android {
         applicationId = "app.fcc.claude"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        // Sobe a cada build do GitHub Actions: atualizar por cima sempre é permitido.
+        versionCode = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
+        versionName = "1.0.${System.getenv("GITHUB_RUN_NUMBER") ?: "0"}"
         ndk { abiFilters += "arm64-v8a" }
+    }
+
+    signingConfigs {
+        // Chave FIXA (fcc.p12 na raiz). Antes, cada build do CI gerava uma chave nova,
+        // e o Android recusava a atualização com "app inválido".
+        create("fcc") {
+            storeFile = rootProject.file("fcc.p12")
+            storeType = "pkcs12"
+            storePassword = "fccclaude"
+            keyAlias = "fcc"
+            keyPassword = "fccclaude"
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
-            // Assinado com a chave debug: instalável por sideload (sem Play Store).
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("fcc")
         }
     }
 
@@ -30,9 +42,11 @@ android {
     }
     kotlinOptions { jvmTarget = "17" }
 
+    // rootfs.tar.gz fica sem recompressão dentro do APK.
+    androidResources { noCompress += listOf("gz") }
+
     packaging {
-        // Necessário: proot precisa existir como arquivo real em nativeLibraryDir.
-        jniLibs { useLegacyPackaging = true }
+        jniLibs { useLegacyPackaging = true } // proot precisa existir como arquivo em nativeLibraryDir
     }
 }
 

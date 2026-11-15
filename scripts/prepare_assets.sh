@@ -12,7 +12,7 @@ R="$WORK/rootfs"
 rm -rf "$WORK"; mkdir -p "$WORK" "$JNI" "$ASSETS"
 
 sudo apt-get update -y
-sudo apt-get install -y patchelf binutils xz-utils curl
+sudo apt-get install -y patchelf binutils xz-utils curl qemu-user-static binfmt-support
 
 ############################ 1) proot (Termux) ############################
 BASE=https://packages.termux.dev/apt/termux-main
@@ -63,6 +63,7 @@ cleanup() {
 trap cleanup EXIT
 sudo rm -f "$R/etc/resolv.conf"
 echo "nameserver 8.8.8.8" | sudo tee "$R/etc/resolv.conf" >/dev/null
+if [ -x /usr/bin/qemu-aarch64-static ]; then sudo cp /usr/bin/qemu-aarch64-static "$R/usr/bin/"; fi
 sudo mount --bind /proc "$R/proc"
 sudo mount --bind /sys  "$R/sys"
 sudo mount --bind /dev  "$R/dev"
@@ -94,20 +95,19 @@ CH /root/.local/bin/fcc-server --version
 CH /root/.local/bin/fcc-claude --help >/dev/null 2>&1 || true
 CH bash -lc 'command -v claude && claude --version'
 
+# Pré-compila o bytecode Python: sem isso, a 1ª inicialização do FCC Server no celular
+# (proot é lento) pode passar de 1 minuto só compilando .py.
+echo "== Pré-compilando bytecode Python"
+CH bash -lc 'PY=$(ls /root/.local/share/uv/tools/*/bin/python 2>/dev/null | head -1); [ -n "$PY" ] || exit 0; for t in /root/.local/share/uv/tools /root/.local/share/uv/python; do "$PY" -m compileall -q -j 0 "$t" >/dev/null 2>&1 || true; done' || true
+
+# Teste de fumaça: o servidor sobe e responde em /health? (apenas informativo, não falha o build)
+echo "== Teste do FCC Server (emulado)"
+CH bash -lc 'nohup fcc-server --auto-started >/tmp/srv.log 2>&1 & pid=$!; for i in $(seq 1 300); do if curl -fsS -m 2 -o /dev/null http://127.0.0.1:8082/health; then echo "HEALTH OK apos ${i}s"; break; fi; kill -0 $pid 2>/dev/null || { echo "servidor encerrou"; break; }; sleep 1; done; tail -n 30 /tmp/srv.log; pkill -f fcc-server; pkill -f free_claude_code; sleep 2' || true
+
 # Limpeza para reduzir o tamanho
 CH apt-get clean
 sudo rm -rf "$R"/var/lib/apt/lists/* "$R"/root/.cache "$R"/tmp/* "$R"/var/log/*.log "$R"/usr/bin/qemu-*-static
 cleanup; trap - EXIT
 
 sudo tar --one-file-system -C "$R" -cf - . | gzip -6 > "$ASSETS/rootfs.tar.gz"
-
-# O aplicativo extrai um TAR sem gzip através do AssetManager.
-gzip -dc "$ASSETS/rootfs.tar.gz" > "$ASSETS/rootfs.tar"
-stat -c %s "$ASSETS/rootfs.tar" > "$ASSETS/rootfs.tar.size"
-rm "$ASSETS/rootfs.tar.gz"
-
-test -s "$ASSETS/rootfs.tar"
-test -s "$ASSETS/rootfs.tar.size"
-test "$(cat "$ASSETS/rootfs.tar.size")" -gt 0
-
-ls -lh "$ASSETS/rootfs.tar" "$ASSETS/rootfs.tar.size" "$JNI"
+ls -lh "$ASSETS/rootfs.tar.gz" "$JNI"
