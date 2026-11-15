@@ -28,7 +28,9 @@ import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.view.inputmethod.InputMethodManager
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
+import android.webkit.WebChromeClient
 import android.webkit.WebView
+import android.os.Message
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
@@ -65,6 +67,7 @@ class MainActivity : Activity(), TerminalViewClient, TerminalSessionClient, Root
     private lateinit var root: LinearLayout
     private var adminOverlay: LinearLayout? = null
     private var adminWeb: WebView? = null
+    private val authPopupWebViews = mutableSetOf<WebView>()
     private lateinit var terminalView: TerminalView
     private lateinit var termWrap: LinearLayout
     private lateinit var termCard: FrameLayout
@@ -133,6 +136,11 @@ class MainActivity : Activity(), TerminalViewClient, TerminalSessionClient, Root
 
     override fun onDestroy() {
         Rootfs.detach(this)
+        authPopupWebViews.toList().forEach { popup ->
+            (popup.parent as? android.view.ViewGroup)?.removeView(popup)
+            popup.destroy()
+        }
+        authPopupWebViews.clear()
         adminWeb?.destroy()
         session?.finishIfRunning()
         if (isFinishing) stopService(Intent(this, KeepAliveService::class.java))
@@ -450,6 +458,32 @@ class MainActivity : Activity(), TerminalViewClient, TerminalSessionClient, Root
         File(filesDir, "tmp/fcc-port").readText().trim().toInt()
     } catch (_: Exception) { 8082 }
 
+    private fun openExternalWebUrl(url: String): Boolean {
+        val uri = android.net.Uri.parse(url)
+        if (uri.scheme != "https" && uri.scheme != "http") return false
+        return try {
+            startActivity(Intent(Intent.ACTION_VIEW, uri))
+            true
+        } catch (_: Exception) {
+            Toast.makeText(this, "Não foi possível abrir o navegador.", Toast.LENGTH_LONG).show()
+            false
+        }
+    }
+
+    private fun disposeAuthPopup(popup: WebView) {
+        if (!authPopupWebViews.remove(popup)) return
+        (popup.parent as? android.view.ViewGroup)?.removeView(popup)
+        popup.stopLoading()
+        popup.destroy()
+    }
+
+    private fun routeAuthPopup(popup: WebView, url: String): Boolean {
+        if (url == "about:blank") return false
+        openExternalWebUrl(url)
+        popup.post { disposeAuthPopup(popup) }
+        return true
+    }
+
     private fun openAdmin() {
         if (adminOverlay == null) {
             val ov = LinearLayout(this).apply {
@@ -470,8 +504,53 @@ class MainActivity : Activity(), TerminalViewClient, TerminalSessionClient, Root
             val web = WebView(this).apply {
                 settings.javaScriptEnabled = true
                 settings.domStorageEnabled = true
+                settings.javaScriptCanOpenWindowsAutomatically = true
+                settings.setSupportMultipleWindows(true)
                 setBackgroundColor(cBg)
+                webChromeClient = object : WebChromeClient() {
+                    override fun onCreateWindow(
+                        view: WebView,
+                        isDialog: Boolean,
+                        isUserGesture: Boolean,
+                        resultMsg: Message
+                    ): Boolean {
+                        val transport = resultMsg.obj as? WebView.WebViewTransport ?: return false
+                        val popup = WebView(this@MainActivity).apply {
+                            settings.javaScriptEnabled = true
+                            settings.domStorageEnabled = true
+                            setBackgroundColor(cBg)
+                            alpha = 0f
+                            webViewClient = object : WebViewClient() {
+                                override fun shouldOverrideUrlLoading(
+                                    view: WebView,
+                                    request: WebResourceRequest
+                                ): Boolean = routeAuthPopup(view, request.url.toString())
+
+                                @Deprecated("Deprecated in Java")
+                                override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean =
+                                    routeAuthPopup(view, url)
+                            }
+                        }
+                        frame.addView(popup, FrameLayout.LayoutParams(1, 1))
+                        authPopupWebViews.add(popup)
+                        transport.webView = popup
+                        resultMsg.sendToTarget()
+                        return true
+                    }
+                }
                 webViewClient = object : WebViewClient() {
+                    override fun shouldOverrideUrlLoading(
+                        view: WebView,
+                        request: WebResourceRequest
+                    ): Boolean {
+                        val uri = request.url
+                        if (uri.host == "127.0.0.1" || uri.host == "localhost") return false
+                        if (uri.scheme == "http" || uri.scheme == "https") {
+                            openExternalWebUrl(uri.toString())
+                            return true
+                        }
+                        return false
+                    }
                     override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
                         if (request.isForMainFrame) {
                             view.loadDataWithBaseURL(null,
