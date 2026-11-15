@@ -90,6 +90,9 @@ sudo cp "$WORK/install.sh" "$R/tmp/install.sh"
 
 CH env FCC_INSTALL_VERSION="$VER" _FCC_INSTALLER_RELEASE="$VER" sh /tmp/install.sh
 
+echo "== Aplicando seletor OAuth para Android"
+sudo python3 "$ROOT/scripts/patch_fcc.py" "$R"
+
 echo "== Verificação final"
 CH /root/.local/bin/fcc-server --version
 CH /root/.local/bin/fcc-claude --help >/dev/null 2>&1 || true

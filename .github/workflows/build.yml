@@ -34,7 +34,7 @@ jobs:
           path: |
             app/src/main/assets/rootfs.tar.gz
             app/src/main/jniLibs
-          key: assets-${{ hashFiles('scripts/prepare_assets.sh') }}
+          key: assets-${{ hashFiles('scripts/prepare_assets.sh', 'scripts/patch_fcc.py') }}
 
       - name: Preparar proot e rootfs (FCC + Claude Code)
         if: steps.cache-assets.outputs.cache-hit != 'true'
