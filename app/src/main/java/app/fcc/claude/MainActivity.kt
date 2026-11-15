@@ -592,7 +592,6 @@ class MainActivity : Activity(), TerminalViewClient, TerminalSessionClient, Root
     override fun onBell(session: TerminalSession) {}
     override fun onColorsChanged(session: TerminalSession) {}
     override fun onTerminalCursorStateChange(state: Boolean) {}
-    override fun setTerminalShellPid(session: TerminalSession, pid: Int) {}
     override fun getTerminalCursorStyle(): Int? = null
 
     // ================================================================ TerminalViewClient
