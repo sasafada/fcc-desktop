@@ -18,15 +18,19 @@ import java.util.concurrent.ConcurrentHashMap
 object Workspace {
     private val locks = ConcurrentHashMap<String, Any>()
 
-    private fun lockFor(id: String): Any =
-        locks.getOrPut(id) { Any() }
-
-
     fun dir(ctx: Context, id: String) = File(ctx.filesDir, "workspaces/$id/files")
     private fun meta(ctx: Context, id: String) = File(ctx.filesDir, "workspace-meta")
     private fun stateFile(ctx: Context, id: String) = File(meta(ctx, id), "$id.state")
     private fun trashDir(ctx: Context, id: String) = File(meta(ctx, id), "$id.trash")
     fun reportFile(ctx: Context, id: String) = File(meta(ctx, id), "$id.report.txt")
+
+    /** Nome legível da pasta escolhida (ex.: "Projetos"). */
+    fun displayName(ctx: Context, tree: Uri): String = try {
+        val doc = android.provider.DocumentsContract.buildDocumentUriUsingTree(tree, android.provider.DocumentsContract.getTreeDocumentId(tree))
+        ctx.contentResolver.query(doc, arrayOf(android.provider.DocumentsContract.Document.COLUMN_DISPLAY_NAME), null, null, null)?.use { c ->
+            if (c.moveToFirst()) c.getString(0) else null
+        } ?: "Pasta do Android"
+    } catch (_: Exception) { "Pasta do Android" }
 
     /** A permissão persistida do SAF ainda existe (com escrita)? */
     fun hasPermission(ctx: Context, tree: String): Boolean =
@@ -47,7 +51,7 @@ object Workspace {
 
     /** Sincroniza (uma por vez por conversa). Nunca lança: erros vão para o relatório. */
     fun sync(ctx: Context, conv: Conversation, progress: (String) -> Unit = {}): SyncReport {
-        val lock = lockFor(conv.id)
+        val lock = locks.getOrPut(conv.id) { Any() }
         synchronized(lock) {
             val tree = conv.treeUri
             val report: SyncReport
@@ -75,53 +79,21 @@ object Workspace {
 
     /** Ao trocar de pasta: a cópia local antiga é arquivada (nada é apagado) e o estado é zerado. */
     fun resetForNewFolder(ctx: Context, id: String) {
-        synchronized(lockFor(id)) {
-            val stamp = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(Date())
-            val old = dir(ctx, id)
-
-            if (old.exists()) {
-                val children = old.list()
-                    ?: throw IllegalStateException("Não foi possível verificar a pasta local antiga")
-
-                if (children.isNotEmpty()) {
-                    val arch = File(
-                        ctx.filesDir,
-                        "workspaces/archive/$id-$stamp-${java.util.UUID.randomUUID()}"
-                    )
-                    if (!arch.parentFile!!.exists() && !arch.parentFile!!.mkdirs())
-                        throw IllegalStateException("Não foi possível criar a pasta de arquivo")
-
-                    java.nio.file.Files.move(old.toPath(), arch.toPath())
-                } else if (!old.deleteRecursively()) {
-                    throw IllegalStateException("Não foi possível remover a pasta local vazia")
-                }
-            }
-
-            val state = stateFile(ctx, id)
-            if (state.exists() && !state.delete())
-                throw IllegalStateException("Não foi possível limpar o estado antigo da sincronização")
-
-            val fresh = dir(ctx, id)
-            if (!fresh.exists() && !fresh.mkdirs())
-                throw IllegalStateException("Não foi possível criar a nova pasta de trabalho")
+        val stamp = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(Date())
+        val old = dir(ctx, id)
+        if (old.exists() && (old.list()?.isNotEmpty() == true)) {
+            val arch = File(ctx.filesDir, "workspaces/archive/$id-$stamp")
+            arch.parentFile?.mkdirs()
+            old.renameTo(arch)
         }
+        stateFile(ctx, id).delete()
+        dir(ctx, id).mkdirs()
     }
 
     fun deleteAll(ctx: Context, id: String) {
-        synchronized(lockFor(id)) {
-            val workspace = File(ctx.filesDir, "workspaces/$id")
-            val state = stateFile(ctx, id)
-            val report = reportFile(ctx, id)
-            val trash = trashDir(ctx, id)
-
-            if (workspace.exists() && !workspace.deleteRecursively())
-                throw IllegalStateException("Não foi possível excluir a cópia local da conversa")
-            if (state.exists() && !state.delete())
-                throw IllegalStateException("Não foi possível excluir o estado da sincronização")
-            if (report.exists() && !report.delete())
-                throw IllegalStateException("Não foi possível excluir o relatório da conversa")
-            if (trash.exists() && !trash.deleteRecursively())
-                throw IllegalStateException("Não foi possível excluir a lixeira da conversa")
-        }
+        File(ctx.filesDir, "workspaces/$id").deleteRecursively()
+        File(meta(ctx, id), "$id.state").delete()
+        File(meta(ctx, id), "$id.report.txt").delete()
+        File(meta(ctx, id), "$id.trash").deleteRecursively()
     }
 }
