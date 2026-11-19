@@ -1,7 +1,6 @@
 package app.fcc.claude
 
 import java.io.File
-import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.security.MessageDigest
@@ -109,16 +108,14 @@ class SyncEngine(
     }
 
     fun sync(progress: (String) -> Unit = {}): SyncReport {
-        if (!local.exists() && !local.mkdirs())
-            throw IOException("Não foi possível criar a pasta local: ${local.path}")
-        if (!local.isDirectory)
-            throw IOException("O caminho local não é um diretório: ${local.path}")
+        local.mkdirs()
         st = loadState()
         progress("Lendo arquivos do app…")
         l = scanLocal()
         progress("Lendo a pasta do Android…")
         r = LinkedHashMap(remote.scan(::ignored))
-        // Renomeações por tamanho/data desativadas: podem confundir arquivos diferentes.
+        detectLocalRenames()
+        detectRemoteRenames()
 
         val paths = TreeSet<String>()
         paths += l.keys; paths += r.keys; paths += st.keys
@@ -137,27 +134,13 @@ class SyncEngine(
         // pastas excluídas de um lado: só removemos se ficaram vazias (mais profundas primeiro)
         for (d in dirsGoneRemote.sortedByDescending { it.length }) {
             val f = File(local, d)
-            if (f.isDirectory) {
-                val children = f.list()
-                if (children == null) {
-                    report.errors.add("$d: não foi possível verificar a pasta local")
-                    continue
-                }
-                if (children.isEmpty()) {
-                    if (!f.delete()) report.errors.add("$d: não foi possível excluir a pasta local")
-                    else st.remove(d)
-                }
-            }
+            if (f.isDirectory && (f.list()?.isEmpty() == true)) { f.delete(); st.remove(d) }
         }
         for (d in dirsGoneLocal.sortedByDescending { it.length }) {
             val hasChildren = r.keys.any { it.startsWith("$d/") }
             if (!hasChildren) { try { remote.delete(d); st.remove(d) } catch (e: Exception) { report.errors.add("$d: ${e.message}") } }
         }
-        if (report.errors.isEmpty()) {
-            saveState()
-        } else {
-            report.errors.add("Estado anterior preservado: houve falha e a sincronização não foi confirmada.")
-        }
+        saveState()
         return report
     }
 
@@ -165,8 +148,7 @@ class SyncEngine(
     private fun scanLocal(): MutableMap<String, Loc> {
         val out = LinkedHashMap<String, Loc>()
         fun walk(dir: File, prefix: String) {
-            val list = dir.listFiles()
-                ?: throw IOException("Não foi possível listar a pasta local: ${dir.path}")
+            val list = dir.listFiles() ?: return
             for (f in list.sortedBy { it.name }) {
                 val path = if (prefix.isEmpty()) f.name else "$prefix/${f.name}"
                 if (ignored(path)) continue
@@ -300,17 +282,12 @@ class SyncEngine(
 
     private fun download(p: String, re: RemoteTree.Entry) {
         val dst = File(local, p)
-        val parent = dst.parentFile
-            ?: throw IOException("Destino sem pasta pai: $p")
-        if (!parent.exists() && !parent.mkdirs())
-            throw IOException("Não foi possível criar a pasta: ${parent.path}")
-        val tmp = Files.createTempFile(parent.toPath(), ".fcc-download-", ".fcc-tmp").toFile()
+        dst.parentFile?.mkdirs()
+        val tmp = File(dst.parentFile, ".${dst.name}.fcc-tmp")
         try {
             remote.readTo(p, tmp)
             Files.move(tmp.toPath(), dst.toPath(), StandardCopyOption.REPLACE_EXISTING)
-        } finally {
-            if (tmp.exists()) tmp.delete()
-        }
+        } finally { if (tmp.exists()) tmp.delete() }
         if (re.mtime > 0) dst.setLastModified(re.mtime)
         val nl = Loc(false, dst.length(), dst.lastModified())
         l[p] = nl
@@ -319,13 +296,11 @@ class SyncEngine(
     }
 
     private fun sameContent(p: String): Boolean {
-        val tmp = Files.createTempFile(local.toPath(), ".fcc-cmp-", ".fcc-tmp").toFile()
+        val tmp = File(local, ".${File(p).name}.cmp.fcc-tmp")
         return try {
             remote.readTo(p, tmp)
             sha256(tmp) == sha256(File(local, p))
-        } finally {
-            if (tmp.exists()) tmp.delete()
-        }
+        } finally { tmp.delete() }
     }
 
     private fun resolveConflict(p: String, lo: Loc, re: RemoteTree.Entry) {
@@ -399,26 +374,9 @@ class SyncEngine(
     private fun loadState(): MutableMap<String, St> {
         val m = LinkedHashMap<String, St>()
         if (!stateFile.exists()) return m
-        stateFile.readLines().forEachIndexed { index, line ->
-            try {
-                val f = line.split('\t')
-                if (f.size != 6 || (f[1] != "d" && f[1] != "f")) {
-                    throw IllegalArgumentException("formato inválido")
-                }
-                val path = unesc(f[0])
-                if (path.isBlank() || path.startsWith("/") || path.split('/').any { it == ".." || it.isBlank() }) {
-                    throw IllegalArgumentException("caminho inválido")
-                }
-                m[path] = St(
-                    f[1] == "d",
-                    f[2].toLong(),
-                    f[3].toLong(),
-                    f[4].toLong(),
-                    f[5].toLong()
-                )
-            } catch (e: Exception) {
-                throw IOException("Estado de sincronização corrompido na linha ${index + 1}; sincronização interrompida.", e)
-            }
+        stateFile.readLines().forEach { line ->
+            val f = line.split('\t')
+            if (f.size == 6) m[unesc(f[0])] = St(f[1] == "d", f[2].toLong(), f[3].toLong(), f[4].toLong(), f[5].toLong())
         }
         return m
     }

@@ -6,268 +6,113 @@ import java.net.HttpURLConnection
 import java.net.InetSocketAddress
 import java.net.Socket
 import java.net.URL
-import java.util.concurrent.TimeUnit
 
 /**
- * Um único FCC Server para o aplicativo inteiro.
- * Reutiliza servidor saudável, supervisiona o processo próprio e
- * impede que supervisores antigos interfiram após stop/restart.
+ * UM único FCC Server para o app inteiro (as conversas só se conectam a ele).
+ *  - reaproveita um servidor já saudável (nunca sobe um segundo);
+ *  - escolhe porta livre entre 8082 e 8090 e só escuta em 127.0.0.1;
+ *  - vigia o processo e o reinicia se cair (com limite de tentativas);
+ *  - encerra apenas o processo que ELE mesmo iniciou (sem pkill).
  */
 object FccServer {
     enum class State { STOPPED, STARTING, READY, FAILED }
 
-    @Volatile var state = State.STOPPED
-        private set
-    @Volatile var port = 8082
-        private set
-    @Volatile var lastError = ""
-        private set
+    @Volatile var state = State.STOPPED; private set
+    @Volatile var port = 8082; private set
+    @Volatile var lastError = ""; private set
     @Volatile var listener: ((State, String) -> Unit)? = null
 
     private const val BASE = 8082
     private const val SPAN = 8
     private const val STARTUP_TIMEOUT_MS = 7 * 60 * 1000L
 
-    private val lock = Any()
-    private var generation = 0L
-    private var wanted = false
     private var worker: Thread? = null
     @Volatile private var process: Process? = null
+    @Volatile private var wanted = false
+    private val lock = Any()
 
     fun logFile(ctx: Context) = File(Proot.tmpDir(ctx), "fcc-server.log")
 
     fun ensure(ctx: Context) {
         val app = ctx.applicationContext
         synchronized(lock) {
-            if (wanted && worker?.isAlive == true) return
-            startLocked(app)
+            if (worker?.isAlive == true) return
+            wanted = true
+            worker = Thread({ supervise(app) }, "fcc-server-supervisor").also { it.isDaemon = true; it.start() }
         }
     }
 
-    private fun startLocked(ctx: Context) {
-        wanted = true
-        val token = ++generation
-        worker = Thread({ supervise(ctx, token) }, "fcc-server-supervisor").apply {
-            isDaemon = true
-            start()
-        }
-    }
-
-    /**
-     * Invalida imediatamente o supervisor anterior. O novo só começa
-     * depois que a thread anterior termina ou atinge o limite de espera.
-     */
+    /** Reinicia somente o servidor iniciado por este app. */
     fun restart(ctx: Context) {
-        val app = ctx.applicationContext
-        val oldWorker: Thread?
-        val oldProcess: Process?
-        val restartToken: Long
-
-        synchronized(lock) {
-            wanted = false
-            restartToken = ++generation
-            oldWorker = worker
-            oldProcess = process
-            worker = null
-            process = null
-        }
-
-        oldWorker?.interrupt()
-        terminate(oldProcess)
-        reportStopped()
-
-        Thread({
-            try {
-                oldWorker?.join(10_000)
-            } catch (_: InterruptedException) {
-                Thread.currentThread().interrupt()
-            }
-
-            synchronized(lock) {
-                // Se outro ensure/stop/restart ocorreu, esta solicitação expirou.
-                if (generation == restartToken && !wanted) startLocked(app)
-            }
-        }, "fcc-server-restart").apply {
-            isDaemon = true
-            start()
-        }
+        stop()
+        Thread { try { Thread.sleep(1500) } catch (_: InterruptedException) {}; ensure(ctx) }.start()
     }
 
     fun stop() {
-        val oldWorker: Thread?
-        val oldProcess: Process?
-
-        synchronized(lock) {
-            wanted = false
-            generation++
-            oldWorker = worker
-            oldProcess = process
-            worker = null
-            process = null
+        wanted = false
+        val p = process
+        process = null
+        if (p != null) {
+            p.destroy()                                   // SIGTERM (encerramento limpo)
+            Thread {
+                try { if (!p.waitFor(4, java.util.concurrent.TimeUnit.SECONDS)) p.destroyForcibly() } catch (_: Exception) {}
+            }.start()
         }
-
-        oldWorker?.interrupt()
-        terminate(oldProcess)
-        reportStopped()
+        set(State.STOPPED, "")
     }
 
-    private fun terminate(p: Process?) {
-        if (p == null) return
-        try { p.destroy() } catch (_: Exception) {}
-        Thread({
-            try {
-                if (!p.waitFor(4, TimeUnit.SECONDS)) p.destroyForcibly()
-            } catch (_: Exception) {
-                try { p.destroyForcibly() } catch (_: Exception) {}
-            }
-        }, "fcc-server-terminate").apply {
-            isDaemon = true
-            start()
-        }
-    }
-
-    private fun isCurrent(token: Long): Boolean =
-        synchronized(lock) { wanted && generation == token }
-
-    private fun report(token: Long, s: State, msg: String) {
-        val callback = synchronized(lock) {
-            if (!wanted || generation != token) return
-            state = s
-            if (s == State.FAILED) lastError = msg
-            listener
-        }
-        callback?.let {
-            try { it(s, msg) } catch (_: Exception) {}
-        }
-    }
-
-    private fun reportStopped() {
-        val callback = synchronized(lock) {
-            state = State.STOPPED
-            lastError = ""
-            listener
-        }
-        callback?.let {
-            try { it(State.STOPPED, "") } catch (_: Exception) {}
-        }
-    }
-
-    private fun pause(token: Long, ms: Long): Boolean {
-        try {
-            Thread.sleep(ms)
-        } catch (_: InterruptedException) {
-            // A mudança de geração é a autoridade para cancelar o supervisor.
-        }
-        return isCurrent(token)
-    }
-
-    // ---------------------------------------------------------------- supervisão
-
-    private fun supervise(ctx: Context, token: Long) {
+    // ------------------------------------------------------------------ supervisão
+    private fun supervise(ctx: Context) {
         var failures = 0
         var windowStart = System.currentTimeMillis()
-
-        while (isCurrent(token)) {
-            report(token, State.STARTING, "procurando servidor FCC…")
-
+        while (wanted) {
+            set(State.STARTING, "procurando servidor FCC…")
             val existing = findHealthy()
-            if (existing != null) {
-                port = existing
-                publish(ctx)
-                report(token, State.READY, "pronto na porta $existing")
-                waitWhileHealthy(null, token)
-                if (!isCurrent(token)) return
+            if (existing != null) {                       // reutiliza instância saudável
+                port = existing; publish(ctx); set(State.READY, "pronto na porta $existing")
+                waitWhileHealthy(null)
+                if (!wanted) return
                 continue
             }
-
             val free = (BASE..BASE + SPAN).firstOrNull { !portInUse(it) }
-            if (free == null) {
-                report(token, State.FAILED, "Nenhuma porta livre entre $BASE e ${BASE + SPAN}.")
-                return
+            if (free == null) { lastError = "Nenhuma porta livre entre $BASE e ${BASE + SPAN}."; set(State.FAILED, lastError); return }
+
+            val proc = try { launch(ctx, free) } catch (e: Exception) {
+                lastError = "Não foi possível iniciar o servidor: ${e.message}"; set(State.FAILED, lastError); return
             }
-
-            val proc = try {
-                launch(ctx, free)
-            } catch (e: Exception) {
-                report(token, State.FAILED, "Não foi possível iniciar o servidor: ${e.message}")
-                return
-            }
-
-            val accepted = synchronized(lock) {
-                if (wanted && generation == token) {
-                    process = proc
-                    true
-                } else false
-            }
-
-            if (!accepted) {
-                terminate(proc)
-                return
-            }
-
-            report(token, State.STARTING, "iniciando na porta $free…")
-            val startedAt = System.currentTimeMillis()
-            var healthy = false
-
-            while (isCurrent(token) &&
-                System.currentTimeMillis() - startedAt < STARTUP_TIMEOUT_MS) {
-                if (health(free)) {
-                    healthy = true
-                    break
-                }
+            process = proc
+            set(State.STARTING, "iniciando na porta $free…")
+            val t0 = System.currentTimeMillis()
+            var ok = false
+            while (wanted && System.currentTimeMillis() - t0 < STARTUP_TIMEOUT_MS) {
+                if (health(free)) { ok = true; break }
                 if (!proc.isAlive) break
-                if (!pause(token, 1000)) break
+                sleep(1000)
             }
-
-            if (!isCurrent(token)) {
-                terminate(proc)
-                clearProcess(proc)
-                return
-            }
-
-            if (healthy) {
-                port = free
-                publish(ctx)
-                report(token, State.READY, "pronto na porta $free")
-                waitWhileHealthy(proc, token)
-                clearProcess(proc)
-
-                if (!isCurrent(token)) return
-                report(token, State.STARTING, "o servidor parou — reiniciando…")
+            if (!wanted) { proc.destroy(); return }
+            if (ok) {
+                port = free; publish(ctx); set(State.READY, "pronto na porta $free")
+                waitWhileHealthy(proc)
+                if (!wanted) return
+                set(State.STARTING, "o servidor parou — reiniciando…")
             } else {
-                lastError = tail(logFile(ctx), 12)
-                    .ifBlank { "o servidor não respondeu a tempo" }
-                terminate(proc)
-                clearProcess(proc)
+                lastError = tail(logFile(ctx), 12).ifBlank { "o servidor não respondeu a tempo" }
+                if (proc.isAlive) proc.destroy()
             }
-
+            // limite: 3 falhas seguidas em 10 minutos → desiste e mostra o log
             val now = System.currentTimeMillis()
-            if (now - windowStart > 10 * 60 * 1000L) {
-                failures = 0
-                windowStart = now
-            }
-
+            if (now - windowStart > 10 * 60 * 1000L) { failures = 0; windowStart = now }
             failures++
-            if (failures >= 3) {
-                report(token, State.FAILED,
-                    lastError.ifBlank { "o servidor caiu 3 vezes seguidas" })
-                return
-            }
-
-            if (!pause(token, 2000L * failures)) return
+            if (failures >= 3) { set(State.FAILED, lastError.ifBlank { "o servidor caiu 3 vezes seguidas" }); return }
+            sleep(2000L * failures)
         }
     }
 
-    private fun clearProcess(p: Process) {
-        synchronized(lock) {
-            if (process === p) process = null
-        }
-    }
-
-    private fun waitWhileHealthy(owned: Process?, token: Long) {
+    /** Fica aqui enquanto o servidor estiver saudável; sai quando cair (ou quando o app pedir parada). */
+    private fun waitWhileHealthy(owned: Process?) {
         var bad = 0
-        while (isCurrent(token)) {
-            if (!pause(token, 5000)) return
+        while (wanted) {
+            sleep(5000)
             val alive = owned?.isAlive ?: true
             if (alive && health(port)) bad = 0 else bad++
             if (bad >= 3 || (owned != null && !alive)) return
@@ -278,60 +123,32 @@ object FccServer {
         Proot.prepareRootfs(ctx)
         val log = logFile(ctx)
         if (log.exists() && log.length() > 1_000_000) log.delete()
-
-        val cmd = Proot.args(
-            ctx,
-            emptyList(),
-            "/root",
-            listOf("HOST=127.0.0.1", "PORT=$p"),
-            listOf("/root/.local/bin/fcc-server")
-        )
-
-        return ProcessBuilder(cmd).apply {
-            environment().putAll(
-                Proot.env(ctx).associate {
-                    it.substringBefore('=') to it.substringAfter('=')
-                }
-            )
-            redirectErrorStream(true)
-            redirectOutput(ProcessBuilder.Redirect.appendTo(log))
-        }.start()
+        val cmd = Proot.args(ctx, emptyList(), "/root", listOf("HOST=127.0.0.1", "PORT=$p"), listOf("/root/.local/bin/fcc-server"))
+        val pb = ProcessBuilder(cmd)
+        pb.environment().putAll(Proot.env(ctx).associate { it.substringBefore('=') to it.substringAfter('=') })
+        pb.redirectErrorStream(true)
+        pb.redirectOutput(ProcessBuilder.Redirect.appendTo(log))
+        return pb.start()
     }
 
-    // ---------------------------------------------------------------- utilidades
-
-    private fun publish(ctx: Context) {
-        try { File(Proot.tmpDir(ctx), "fcc-port").writeText(port.toString()) }
-        catch (_: Exception) {}
-    }
-
-    private fun findHealthy(): Int? =
-        (BASE..BASE + SPAN).firstOrNull { health(it) }
+    // ------------------------------------------------------------------ utilidades
+    private fun set(s: State, msg: String) { state = s; listener?.invoke(s, msg) }
+    private fun sleep(ms: Long) { try { Thread.sleep(ms) } catch (_: InterruptedException) {} }
+    private fun publish(ctx: Context) { try { File(Proot.tmpDir(ctx), "fcc-port").writeText(port.toString()) } catch (_: Exception) {} }
+    private fun findHealthy(): Int? = (BASE..BASE + SPAN).firstOrNull { health(it) }
 
     private fun health(p: Int): Boolean = try {
-        val c = URL("http://127.0.0.1:$p/health")
-            .openConnection() as HttpURLConnection
-        c.connectTimeout = 1500
-        c.readTimeout = 3000
-        try { c.responseCode == 200 } finally { c.disconnect() }
-    } catch (_: Exception) {
-        false
-    }
+        val c = URL("http://127.0.0.1:$p/health").openConnection() as HttpURLConnection
+        c.connectTimeout = 1500; c.readTimeout = 3000
+        val ok = c.responseCode == 200
+        c.disconnect(); ok
+    } catch (_: Exception) { false }
 
     private fun portInUse(p: Int): Boolean = try {
-        Socket().use {
-            it.connect(InetSocketAddress("127.0.0.1", p), 300)
-            true
-        }
-    } catch (_: Exception) {
-        false
-    }
+        Socket().use { it.connect(InetSocketAddress("127.0.0.1", p), 300); true }
+    } catch (_: Exception) { false }
 
     private fun tail(f: File, n: Int): String = try {
-        f.readLines().takeLast(n).joinToString("\n") {
-            if (it.length > 200) it.take(200) + "…" else it
-        }
-    } catch (_: Exception) {
-        ""
-    }
+        f.readLines().takeLast(n).joinToString("\n") { if (it.length > 200) it.take(200) + "…" else it }
+    } catch (_: Exception) { "" }
 }

@@ -30,13 +30,10 @@ class SafRemote(ctx: Context, private val tree: Uri) : RemoteTree {
         fun walk(parentId: String, prefix: String) {
             val dirs = ArrayList<Pair<String, String>>()
             val children = DocumentsContract.buildChildDocumentsUriUsingTree(tree, parentId)
-            val cursor = cr.query(children, projection, null, null, null)
-                ?: throw java.io.IOException("O provedor não conseguiu listar: $prefix")
-            cursor.use { c ->
+            cr.query(children, projection, null, null, null)?.use { c ->
                 while (c.moveToNext()) {
                     val id = c.getString(0) ?: continue
-                    val name = c.getString(1) ?: throw java.io.IOException("Item SAF sem nome em: $prefix")
-                    validateName(name)
+                    val name = c.getString(1) ?: continue
                     val mime = c.getString(2) ?: ""
                     val size = if (c.isNull(3)) 0L else c.getLong(3)
                     val mt = if (c.isNull(4)) 0L else c.getLong(4)
@@ -90,10 +87,8 @@ class SafRemote(ctx: Context, private val tree: Uri) : RemoteTree {
 
     override fun delete(path: String) {
         val id = ids[path] ?: return
-        if (!DocumentsContract.deleteDocument(cr, docUri(id))) {
-            throw java.io.IOException("O provedor não confirmou a exclusão de '$path'")
-        }
-        ids.keys.filter { it == path || it.startsWith("$path/") }.toList().forEach { ids.remove(it) }
+        DocumentsContract.deleteDocument(cr, docUri(id))
+        ids.keys.filter { it == path || it.startsWith("$path/") }.forEach { ids.remove(it) }
     }
 
     override fun move(from: String, to: String): RemoteTree.Entry {
@@ -114,12 +109,8 @@ class SafRemote(ctx: Context, private val tree: Uri) : RemoteTree {
                 ?: throw UnsupportedOperationException("O provedor não suporta renomear")
             curId = DocumentsContract.getDocumentId(renamed)
         }
-        val descendants = ids.filterKeys { it.startsWith("$from/") }
-        ids.keys.filter { it == from || it.startsWith("$from/") }.toList().forEach { ids.remove(it) }
+        ids.remove(from)
         ids[to] = curId
-        for ((oldPath, childId) in descendants) {
-            ids[to + oldPath.removePrefix(from)] = childId
-        }
         return entryOf(to, curId)
     }
 
@@ -129,7 +120,6 @@ class SafRemote(ctx: Context, private val tree: Uri) : RemoteTree {
         ids[path]?.let { return it }
         val parentId = ensureDir(path.substringBeforeLast('/', ""))
         val name = path.substringAfterLast('/')
-        validateName(name)
         val uri = DocumentsContract.createDocument(cr, docUri(parentId), Document.MIME_TYPE_DIR, name)
             ?: throw java.io.IOException("O provedor recusou criar a pasta '$path'")
         val id = DocumentsContract.getDocumentId(uri)
@@ -151,12 +141,6 @@ class SafRemote(ctx: Context, private val tree: Uri) : RemoteTree {
             }
         }
         throw FileNotFoundException(path)
-    }
-
-    private fun validateName(name: String) {
-        if (name.isBlank() || name == "." || name == ".." || name.contains("/") || name.contains("\\")) {
-            throw java.io.IOException("Nome de arquivo/pasta inválido recebido do provedor: '$name'")
-        }
     }
 
     private fun mimeFor(name: String): String {

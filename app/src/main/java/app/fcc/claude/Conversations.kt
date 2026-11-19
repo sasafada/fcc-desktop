@@ -14,6 +14,7 @@ data class Conversation(
     val createdAt: Long,
     var internal: Boolean = false,      // escolheu usar só a pasta interna do app (sem sincronizar)
     var treeName: String? = null,       // nome exibido da pasta escolhida
+    var claudeSession: String? = null,  // id da sessão do Claude Code (para --resume)
 )
 
 /** Persistência simples (JSON em filesDir) das conversas e de qual está ativa. */
@@ -37,7 +38,8 @@ class ConversationStore(private val ctx: Context) {
                         if (o.isNull("tree")) null else o.optString("tree").ifEmpty { null },
                         o.optLong("created", System.currentTimeMillis()),
                         o.optBoolean("internal", false),
-                        if (o.isNull("treeName")) null else o.optString("treeName").ifEmpty { null }))
+                        if (o.isNull("treeName")) null else o.optString("treeName").ifEmpty { null },
+                        if (o.isNull("session")) null else o.optString("session").ifEmpty { null }))
                 }
             }
         } catch (_: Exception) { items.clear() }
@@ -69,7 +71,8 @@ class ConversationStore(private val ctx: Context) {
         items.forEach {
             arr.put(JSONObject().put("id", it.id).put("name", it.name)
                 .put("tree", it.treeUri ?: JSONObject.NULL).put("created", it.createdAt)
-                .put("internal", it.internal).put("treeName", it.treeName ?: JSONObject.NULL))
+                .put("internal", it.internal).put("treeName", it.treeName ?: JSONObject.NULL)
+                .put("session", it.claudeSession ?: JSONObject.NULL))
         }
         val tmp = File(ctx.filesDir, "conversations.json.tmp")
         tmp.writeText(JSONObject().put("active", activeId).put("items", arr).toString())

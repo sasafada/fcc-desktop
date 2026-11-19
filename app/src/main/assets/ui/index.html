@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<title>FCC Claude</title>
+<link rel="stylesheet" href="vendor/hljs.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="bg"><i class="b1"></i><i class="b2"></i><i class="b3"></i></div>
+
+<main id="views">
+  <!-- INÍCIO -->
+  <section id="v-home" class="view active">
+    <header class="top">
+      <div class="brand"><img class="logo" src="img/logo.svg" alt=""><span class="name">FCC Claude</span><span class="ver" id="ver">v1.0</span></div>
+      <div class="actions">
+        <button class="icon-btn" id="bell" aria-label="Notificações"><span data-i="bell"></span><span class="dot" id="belldot"></span></button>
+        <button class="avatar" id="avatar" aria-label="Perfil">U</button>
+      </div>
+    </header>
+    <p class="tag">Seu assistente de desenvolvimento com IA, agora no Android.</p>
+    <div class="hero">
+      <div class="hero-text">
+        <h1>Olá! <span class="wave">👋</span></h1>
+        <h2>Como posso ajudar<br>você hoje?</h2>
+        <svg class="squig" viewBox="0 0 220 22" aria-hidden="true"><defs><linearGradient id="sg" x1="0" x2="1"><stop offset="0" stop-color="#7C5CFF"/><stop offset="1" stop-color="#C9B8FF"/></linearGradient></defs><path d="M3 17C45 4 120 3 217 12" fill="none" stroke="url(#sg)" stroke-width="4" stroke-linecap="round"/></svg>
+      </div>
+      <img id="mascot" class="mascot" src="img/mascot.webp" alt="">
+    </div>
+    <div class="cards">
+      <button class="card c-new" data-act="newConv"><span class="ico" data-i="chat"></span><b>Nova Conversa</b><small>Comece um novo chat com Claude ou ChatGPT</small><span class="go" data-i="arrow"></span></button>
+      <button class="card c-folder" data-act="pickFolder"><span class="ico" data-i="folder"></span><b>Escolher Pasta</b><small>Defina onde salvar seus projetos</small><span class="go" data-i="arrow"></span></button>
+      <button class="card c-prov" data-act="admin"><span class="ico" data-i="cube"></span><b>Provedores e APIs</b><small>Configure suas APIs e provedores</small><span class="go" data-i="arrow"></span></button>
+      <button class="card c-login" data-act="login"><span class="ico" data-i="lock"></span><b>Login</b><small>Conecte-se com sua conta ChatGPT</small><span class="go" data-i="arrow"></span></button>
+    </div>
+    <div class="sugg-title"><span data-i="bulb"></span> Você também pode pedir assim:</div>
+    <div class="sugg" id="sugg-home"></div>
+  </section>
+
+  <!-- CHAT -->
+  <section id="v-chat" class="view">
+    <header class="chat-top">
+      <button class="icon-btn" id="chat-back" aria-label="Voltar"><span data-i="back"></span></button>
+      <div class="chat-title" id="chat-title-wrap"><b id="chat-title">Conversa</b><span class="chip-row"><span class="pill" id="chat-folder"></span><span class="pill srv" id="chat-server"></span></span></div>
+      <button class="icon-btn" id="chat-menu" aria-label="Mais"><span data-i="dots"></span></button>
+    </header>
+    <div id="msgs"></div>
+    <div id="empty">
+      <img class="mascot-s" src="img/mascot.webp" alt="">
+      <h3>Como posso ajudar?</h3>
+      <p>Descreva o que você quer fazer. Eu leio, crio e edito os arquivos da sua pasta.</p>
+      <div class="sugg" id="sugg-empty"></div>
+    </div>
+    <button id="jump" aria-label="Ir para o fim"><span data-i="down"></span></button>
+  </section>
+
+  <!-- CONVERSAS -->
+  <section id="v-convs" class="view">
+    <header class="top plain"><h2 class="vt">Conversas</h2><button class="icon-btn solid" id="conv-new" aria-label="Nova conversa"><span data-i="plus"></span></button></header>
+    <div class="search"><span data-i="search"></span><input id="conv-search" type="text" placeholder="Buscar conversas" autocomplete="off"></div>
+    <div id="conv-list"></div>
+  </section>
+
+  <!-- PROJETOS -->
+  <section id="v-projects" class="view">
+    <header class="top plain"><h2 class="vt">Projetos</h2></header>
+    <div class="panel" id="proj-card"></div>
+    <div class="panel">
+      <div class="panel-head"><b>Arquivos</b><button class="mini" id="fs-refresh"><span data-i="refresh"></span></button></div>
+      <div class="crumbs" id="fs-crumbs"></div>
+      <div id="fs-list"></div>
+    </div>
+  </section>
+
+  <!-- CONFIGURAÇÕES -->
+  <section id="v-settings" class="view">
+    <header class="top plain"><h2 class="vt">Configurações</h2></header>
+    <div class="group-title">Inteligência artificial</div>
+    <div class="panel list">
+      <button class="row" data-act="admin"><span class="ri c-prov" data-i="cube"></span><span class="rt"><b>Provedores e APIs</b><small>Chaves, modelos e provedores do FCC</small></span><span class="rc" data-i="chev"></span></button>
+      <button class="row" data-act="login"><span class="ri c-login" data-i="lock"></span><span class="rt"><b>Login com ChatGPT</b><small>Conecte sua conta pelo navegador</small></span><span class="rc" data-i="chev"></span></button>
+      <div class="row static"><span class="ri c-new" data-i="shield"></span><span class="rt"><b>Permissões da IA</b><small id="mode-desc"></small></span></div>
+      <div class="seg" id="mode-seg"></div>
+    </div>
+    <div class="group-title">Assistente interno</div>
+    <div class="panel list">
+      <div class="row static"><span class="ri" id="srv-dot"></span><span class="rt"><b id="srv-title">Assistente</b><small id="srv-sub"></small></span></div>
+      <button class="row" data-act="restartServer"><span class="ri c-folder" data-i="refresh"></span><span class="rt"><b>Reiniciar assistente</b><small>Use se as respostas pararem de chegar</small></span><span class="rc" data-i="chev"></span></button>
+    </div>
+    <div class="group-title">Aparência</div>
+    <div class="panel list">
+      <div class="row static"><span class="ri c-new" data-i="heart"></span><span class="rt"><b>Mostrar mascote</b><small>Ilustração na tela inicial e em telas vazias</small></span><label class="switch"><input type="checkbox" id="sw-mascot"><i></i></label></div>
+    </div>
+    <div class="group-title">Avançado</div>
+    <div class="panel list">
+      <button class="row" data-act="terminal"><span class="ri dark" data-i="terminal"></span><span class="rt"><b>Terminal (diagnóstico)</b><small>Só para suporte técnico</small></span><span class="rc" data-i="chev"></span></button>
+      <button class="row" data-act="serverLog"><span class="ri dark" data-i="file"></span><span class="rt"><b>Registro do assistente</b><small>Mensagens internas do servidor</small></span><span class="rc" data-i="chev"></span></button>
+      <button class="row" data-act="report"><span class="ri dark" data-i="refresh"></span><span class="rt"><b>Relatório da sincronização</b><small>Última sincronização desta conversa</small></span><span class="rc" data-i="chev"></span></button>
+    </div>
+  </section>
+
+  <!-- MAIS -->
+  <section id="v-more" class="view">
+    <header class="top plain"><h2 class="vt">Mais</h2></header>
+    <div class="panel about">
+      <img class="logo big" src="img/logo.svg" alt="">
+      <b>FCC Claude</b><span id="more-ver">v1.0</span>
+      <p>Seu assistente de desenvolvimento com IA no Android. Converse, peça projetos e acompanhe os arquivos criados na pasta que você escolher.</p>
+    </div>
+    <div class="group-title">Como funciona</div>
+    <div class="panel steps">
+      <div><i>1</i><span>Escolha uma <b>pasta</b> para guardar seus projetos.</span></div>
+      <div><i>2</i><span>Configure um <b>provedor</b> ou entre com sua conta ChatGPT.</span></div>
+      <div><i>3</i><span>Converse: a IA cria e edita arquivos de verdade na sua pasta.</span></div>
+    </div>
+    <div class="panel list">
+      <button class="row" data-act="profile"><span class="ri c-new" data-i="user"></span><span class="rt"><b>Perfil</b><small>Seu nome e avatar</small></span><span class="rc" data-i="chev"></span></button>
+      <button class="row" data-act="notices"><span class="ri c-login" data-i="bell"></span><span class="rt"><b>Notificações</b><small>Avisos de sincronização e do assistente</small></span><span class="rc" data-i="chev"></span></button>
+    </div>
+  </section>
+</main>
+
+<div id="composer">
+  <div id="attach-row"></div>
+  <div class="box">
+    <button class="icon-btn flat" id="attach" aria-label="Anexar arquivo"><span data-i="clip"></span></button>
+    <textarea id="input" rows="1" placeholder="Digite sua mensagem aqui…" autocomplete="off" autocapitalize="sentences"></textarea>
+    <button id="send" aria-label="Enviar"><span data-i="send"></span></button>
+  </div>
+</div>
+
+<nav id="tabs">
+  <button data-tab="home" class="active"><span data-i="home"></span><em>Início</em></button>
+  <button data-tab="convs"><span data-i="msgs"></span><em>Conversas</em></button>
+  <button data-tab="projects"><span data-i="folder"></span><em>Projetos</em></button>
+  <button data-tab="settings"><span data-i="gear"></span><em>Configurações</em></button>
+  <button data-tab="more"><span data-i="dots"></span><em>Mais</em></button>
+</nav>
+
+<div id="busy"><div class="busy-card"><img class="logo big" src="img/logo.svg" alt=""><h3 id="busy-title">Preparando</h3><p id="busy-text"></p><div class="bar"><i id="busy-bar"></i></div><span id="busy-pct"></span><button id="busy-retry" class="btn primary" style="display:none;margin-top:18px" type="button">Tentar de novo</button></div></div>
+<div id="sheet-bg"><div id="sheet"><div class="grab"></div><h3 id="sheet-title"></h3><div id="sheet-body"></div><div id="sheet-actions"></div></div></div>
+<div id="toast"></div>
+
+<script src="vendor/marked.umd.js"></script>
+<script src="vendor/purify.min.js"></script>
+<script src="vendor/highlight.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

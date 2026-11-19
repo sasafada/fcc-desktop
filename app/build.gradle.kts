@@ -52,6 +52,7 @@ android {
 
 dependencies {
     implementation("androidx.browser:browser:1.8.0")
+    implementation("androidx.webkit:webkit:1.11.0")
     implementation("com.github.termux.termux-app:terminal-view:v0.118.0")
     implementation("org.apache.commons:commons-compress:1.26.2")
 }
