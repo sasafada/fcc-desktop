@@ -1,0 +1,10 @@
+.work/
+build/
+.gradle/
+.idea/
+local.properties
+app/src/main/assets/rootfs.tar
+app/src/main/assets/rootfs.tar.gz
+app/src/main/assets/rootfs.tar.size
+app/src/main/jniLibs/
+fcc.p12
