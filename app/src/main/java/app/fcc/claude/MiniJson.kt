@@ -1,4 +1,4 @@
-package app.fcc.claude
+package app.fcc.ai
 
 /** JSON mínimo (sem dependências): parse -> Map/List/String/Long/Double/Boolean/null e stringify. */
 object MiniJson {

@@ -9,5 +9,5 @@ dependencyResolutionManagement {
         maven("https://jitpack.io")
     }
 }
-rootProject.name = "fcc-claude"
+rootProject.name = "fcc-ai"
 include(":app")

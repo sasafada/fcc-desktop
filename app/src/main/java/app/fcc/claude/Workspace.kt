@@ -1,4 +1,4 @@
-package app.fcc.claude
+package app.fcc.ai
 
 import android.content.Context
 import android.content.Intent

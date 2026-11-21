@@ -1,4 +1,4 @@
-package app.fcc.claude
+package app.fcc.ai
 
 import java.io.BufferedReader
 import java.io.File

@@ -1,4 +1,4 @@
-package app.fcc.claude
+package app.fcc.ai
 
 import android.app.Notification
 import android.app.NotificationChannel

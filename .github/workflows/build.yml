@@ -36,7 +36,7 @@ jobs:
             app/src/main/jniLibs
           key: assets-${{ hashFiles('scripts/prepare_assets.sh', 'scripts/patch_fcc.py') }}
 
-      - name: Preparar proot e rootfs (FCC + Claude Code)
+      - name: Preparar proot e rootfs (FCC + FCC AI)
         if: steps.cache-assets.outputs.cache-hit != 'true'
         run: bash scripts/prepare_assets.sh
 
@@ -70,7 +70,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: fcc-claude-apk
+          name: fcc-ai-apk
           path: app/build/outputs/apk/release/*.apk
           compression-level: 0
           retention-days: 14

@@ -1,149 +1,194 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; base-uri 'none'; form-action 'none'">
-<title>FCC Claude</title>
-<link rel="stylesheet" href="vendor/hljs.css">
+<title>FCC AI</title>
+<link rel="stylesheet" href="design-system.css">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div id="bg"><i class="b1"></i><i class="b2"></i><i class="b3"></i></div>
+<div id="app">
+  <!-- Sidebar Overlay -->
+  <div id="sidebar-overlay" class="sidebar-overlay" aria-hidden="true"></div>
 
-<main id="views">
-  <!-- INÍCIO -->
-  <section id="v-home" class="view active">
-    <header class="top">
-      <div class="brand"><img class="logo" src="img/logo.svg" alt=""><span class="name">FCC Claude</span><span class="ver" id="ver">v1.0</span></div>
-      <div class="actions">
-        <button class="icon-btn" id="bell" aria-label="Notificações"><span data-i="bell"></span><span class="dot" id="belldot"></span></button>
-        <button class="avatar" id="avatar" aria-label="Perfil">U</button>
+  <!-- Sidebar -->
+  <aside id="sidebar" class="sidebar" aria-label="Menu lateral">
+    <div class="sidebar-header">
+      <div class="sidebar-brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/></svg>
+        </div>
+        <span class="brand-name">FCC AI</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav" role="navigation" aria-label="Navegação principal">
+      <section class="sidebar-section" aria-label="Ações">
+        <h3 class="sidebar-section-title">Ações</h3>
+        <button class="sidebar-item" data-act="newChat" type="button">
+          <svg class="sidebar-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/></svg>
+          <span>Novo chat</span>
+        </button>
+        <button class="sidebar-item" data-act="projects" type="button">
+          <svg class="sidebar-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          <span>Projetos</span>
+        </button>
+        <button class="sidebar-item" data-act="skills" type="button">
+          <svg class="sidebar-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <span>Skills</span>
+        </button>
+        <button class="sidebar-item" data-act="plugins" type="button">
+          <svg class="sidebar-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <span>Plugins</span>
+        </button>
+      </section>
+
+      <div class="sidebar-divider"></div>
+
+      <section class="sidebar-section" aria-label="Conversas recentes">
+        <h3 class="sidebar-section-title">Recentes</h3>
+        <div id="recent-list" class="recent-list" role="list"></div>
+      </section>
+
+      <div class="sidebar-divider"></div>
+
+      <section class="sidebar-footer" aria-label="Opções do usuário">
+        <button class="sidebar-item sidebar-item-danger" data-act="exit" type="button">
+          <svg class="sidebar-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>
+          <span>Sair</span>
+        </button>
+        <button class="sidebar-item sidebar-user" id="user-btn" type="button" aria-label="Configurações do usuário">
+          <div class="user-avatar">U</div>
+          <span>Conta</span>
+          <svg class="sidebar-item-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </section>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main id="main" class="main">
+    <!-- Top Bar -->
+    <header class="topbar" role="banner">
+      <button class="btn-icon sidebar-toggle" id="sidebar-toggle" aria-label="Abrir menu" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <h1 class="topbar-title">Conversa</h1>
+      <div class="topbar-actions">
+        <button class="btn-icon" id="user-menu-btn" aria-label="Menu do usuário" type="button">
+          <div class="user-avatar-sm">U</div>
+        </button>
       </div>
     </header>
-    <p class="tag">Seu assistente de desenvolvimento com IA, agora no Android.</p>
-    <div class="hero">
-      <div class="hero-text">
-        <h1>Olá! <span class="wave">👋</span></h1>
-        <h2>Como posso ajudar<br>você hoje?</h2>
-        <svg class="squig" viewBox="0 0 220 22" aria-hidden="true"><defs><linearGradient id="sg" x1="0" x2="1"><stop offset="0" stop-color="#7C5CFF"/><stop offset="1" stop-color="#C9B8FF"/></linearGradient></defs><path d="M3 17C45 4 120 3 217 12" fill="none" stroke="url(#sg)" stroke-width="4" stroke-linecap="round"/></svg>
+
+    <!-- Chat View -->
+    <section id="chat-view" class="chat-view" role="main" aria-label="Conversa">
+      <!-- Empty State - Animated AI Icon -->
+      <div id="empty-state" class="empty-state" aria-hidden="true">
+        <div class="ai-icon-wrapper">
+          <div class="ai-icon" id="ai-icon">
+            <!-- Animated AI mascot -->
+            <div class="ai-body">
+              <div class="ai-head">
+                <div class="ai-eyes">
+                  <div class="ai-eye left"><div class="ai-pupil"></div></div>
+                  <div class="ai-eye right"><div class="ai-pupil"></div></div>
+                </div>
+                <div class="ai-antenna"><div class="ai-antenna-tip"></div></div>
+              </div>
+              <div class="ai-body-main">
+                <div class="ai-arm left"></div>
+                <div class="ai-arm right"></div>
+              </div>
+              <div class="ai-legs">
+                <div class="ai-leg left"></div>
+                <div class="ai-leg right"></div>
+              </div>
+              <div class="ai-glow"></div>
+            </div>
+            <div class="ai-particles" id="ai-particles"></div>
+          </div>
+        </div>
+        <h2 class="empty-title">FCC AI</h2>
+        <p class="empty-subtitle">Digite sua mensagem para começar</p>
       </div>
-      <img id="mascot" class="mascot" src="img/mascot.webp" alt="">
-    </div>
-    <div class="cards">
-      <button class="card c-new" data-act="newConv"><span class="ico" data-i="chat"></span><b>Nova Conversa</b><small>Comece um novo chat com Claude ou ChatGPT</small><span class="go" data-i="arrow"></span></button>
-      <button class="card c-folder" data-act="pickFolder"><span class="ico" data-i="folder"></span><b>Escolher Pasta</b><small>Defina onde salvar seus projetos</small><span class="go" data-i="arrow"></span></button>
-      <button class="card c-prov" data-act="admin"><span class="ico" data-i="cube"></span><b>Provedores e APIs</b><small>Configure suas APIs e provedores</small><span class="go" data-i="arrow"></span></button>
-      <button class="card c-login" data-act="login"><span class="ico" data-i="lock"></span><b>Login</b><small>Conecte-se com sua conta ChatGPT</small><span class="go" data-i="arrow"></span></button>
-    </div>
-    <div class="sugg-title"><span data-i="bulb"></span> Você também pode pedir assim:</div>
-    <div class="sugg" id="sugg-home"></div>
-  </section>
 
-  <!-- CHAT -->
-  <section id="v-chat" class="view">
-    <header class="chat-top">
-      <button class="icon-btn" id="chat-back" aria-label="Voltar"><span data-i="back"></span></button>
-      <div class="chat-title" id="chat-title-wrap"><b id="chat-title">Conversa</b><span class="chip-row"><span class="pill" id="chat-folder"></span><span class="pill srv" id="chat-server"></span></span></div>
-      <button class="icon-btn" id="chat-menu" aria-label="Mais"><span data-i="dots"></span></button>
+      <!-- Messages Container -->
+      <div id="messages" class="messages" role="log" aria-live="polite" aria-label="Mensagens da conversa"></div>
+    </section>
+
+    <!-- Composer -->
+    <footer class="composer" role="form" aria-label="Enviar mensagem">
+      <div id="attachments-row" class="attachments-row" aria-label="Anexos"></div>
+      <div class="composer-box">
+        <button class="btn-icon attach-btn" id="attach-btn" aria-label="Anexar arquivo" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+        </button>
+        <textarea id="input" rows="1" placeholder="Digite sua mensagem aqui…" aria-label="Digite sua mensagem" autocomplete="off" autocapitalize="sentences" spellcheck="true"></textarea>
+        <button class="btn-icon send-btn" id="send-btn" aria-label="Enviar mensagem" type="button">
+          <svg class="send-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          <svg class="stop-icon" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+        </button>
+      </div>
+    </footer>
+  </main>
+
+  <!-- User Menu Dropdown -->
+  <div id="user-menu" class="dropdown" role="menu" aria-label="Menu do usuário">
+    <button class="dropdown-item" role="menuitem" data-act="personalize" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/></svg>
+      <span>Personalizar ambiente</span>
+    </button>
+    <button class="dropdown-item" role="menuitem" data-act="providers" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+      <span>Provedores de IA</span>
+    </button>
+    <button class="dropdown-item dropdown-item-danger" role="menuitem" data-act="exit" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>
+      <span>Sair</span>
+    </button>
+  </div>
+
+  <!-- User Menu Trigger (for mobile) -->
+  <button class="btn-icon user-menu-trigger" id="user-menu-trigger" aria-label="Menu do usuário" type="button">
+    <div class="user-avatar-sm">U</div>
+  </button>
+
+  <!-- Bottom Sheet -->
+  <div id="sheet-backdrop" class="sheet-backdrop" aria-hidden="true"></div>
+  <div id="sheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+    <div class="sheet-grab"></div>
+    <header class="sheet-header">
+      <h3 id="sheet-title"></h3>
+      <button class="btn-icon sheet-close" aria-label="Fechar" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </header>
-    <div id="msgs"></div>
-    <div id="empty">
-      <img class="mascot-s" src="img/mascot.webp" alt="">
-      <h3>Como posso ajudar?</h3>
-      <p>Descreva o que você quer fazer. Eu leio, crio e edito os arquivos da sua pasta.</p>
-      <div class="sugg" id="sugg-empty"></div>
-    </div>
-    <button id="jump" aria-label="Ir para o fim"><span data-i="down"></span></button>
-  </section>
+    <div id="sheet-body" class="sheet-body"></div>
+    <footer id="sheet-actions" class="sheet-actions"></footer>
+  </div>
 
-  <!-- CONVERSAS -->
-  <section id="v-convs" class="view">
-    <header class="top plain"><h2 class="vt">Conversas</h2><button class="icon-btn solid" id="conv-new" aria-label="Nova conversa"><span data-i="plus"></span></button></header>
-    <div class="search"><span data-i="search"></span><input id="conv-search" type="text" placeholder="Buscar conversas" autocomplete="off"></div>
-    <div id="conv-list"></div>
-  </section>
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
 
-  <!-- PROJETOS -->
-  <section id="v-projects" class="view">
-    <header class="top plain"><h2 class="vt">Projetos</h2></header>
-    <div class="panel" id="proj-card"></div>
-    <div class="panel">
-      <div class="panel-head"><b>Arquivos</b><button class="mini" id="fs-refresh"><span data-i="refresh"></span></button></div>
-      <div class="crumbs" id="fs-crumbs"></div>
-      <div id="fs-list"></div>
+  <!-- Busy Overlay -->
+  <div id="busy-overlay" class="busy-overlay" aria-live="assertive" aria-atomic="true" hidden>
+    <div class="busy-card">
+      <div class="busy-icon">
+        <div class="spinner"></div>
+      </div>
+      <h3 id="busy-title">Preparando</h3>
+      <p id="busy-text"></p>
+      <div class="busy-progress">
+        <div class="busy-bar" id="busy-bar"></div>
+      </div>
+      <span id="busy-pct"></span>
+      <button class="btn btn-primary btn-block" id="busy-retry" type="button" hidden>Tentar novamente</button>
     </div>
-  </section>
-
-  <!-- CONFIGURAÇÕES -->
-  <section id="v-settings" class="view">
-    <header class="top plain"><h2 class="vt">Configurações</h2></header>
-    <div class="group-title">Inteligência artificial</div>
-    <div class="panel list">
-      <button class="row" data-act="admin"><span class="ri c-prov" data-i="cube"></span><span class="rt"><b>Provedores e APIs</b><small>Chaves, modelos e provedores do FCC</small></span><span class="rc" data-i="chev"></span></button>
-      <button class="row" data-act="login"><span class="ri c-login" data-i="lock"></span><span class="rt"><b>Login com ChatGPT</b><small>Conecte sua conta pelo navegador</small></span><span class="rc" data-i="chev"></span></button>
-      <div class="row static"><span class="ri c-new" data-i="shield"></span><span class="rt"><b>Permissões da IA</b><small id="mode-desc"></small></span></div>
-      <div class="seg" id="mode-seg"></div>
-    </div>
-    <div class="group-title">Assistente interno</div>
-    <div class="panel list">
-      <div class="row static"><span class="ri" id="srv-dot"></span><span class="rt"><b id="srv-title">Assistente</b><small id="srv-sub"></small></span></div>
-      <button class="row" data-act="restartServer"><span class="ri c-folder" data-i="refresh"></span><span class="rt"><b>Reiniciar assistente</b><small>Use se as respostas pararem de chegar</small></span><span class="rc" data-i="chev"></span></button>
-    </div>
-    <div class="group-title">Aparência</div>
-    <div class="panel list">
-      <div class="row static"><span class="ri c-new" data-i="heart"></span><span class="rt"><b>Mostrar mascote</b><small>Ilustração na tela inicial e em telas vazias</small></span><label class="switch"><input type="checkbox" id="sw-mascot"><i></i></label></div>
-    </div>
-    <div class="group-title">Avançado</div>
-    <div class="panel list">
-      <button class="row" data-act="terminal"><span class="ri dark" data-i="terminal"></span><span class="rt"><b>Terminal (diagnóstico)</b><small>Só para suporte técnico</small></span><span class="rc" data-i="chev"></span></button>
-      <button class="row" data-act="serverLog"><span class="ri dark" data-i="file"></span><span class="rt"><b>Registro do assistente</b><small>Mensagens internas do servidor</small></span><span class="rc" data-i="chev"></span></button>
-      <button class="row" data-act="report"><span class="ri dark" data-i="refresh"></span><span class="rt"><b>Relatório da sincronização</b><small>Última sincronização desta conversa</small></span><span class="rc" data-i="chev"></span></button>
-    </div>
-  </section>
-
-  <!-- MAIS -->
-  <section id="v-more" class="view">
-    <header class="top plain"><h2 class="vt">Mais</h2></header>
-    <div class="panel about">
-      <img class="logo big" src="img/logo.svg" alt="">
-      <b>FCC Claude</b><span id="more-ver">v1.0</span>
-      <p>Seu assistente de desenvolvimento com IA no Android. Converse, peça projetos e acompanhe os arquivos criados na pasta que você escolher.</p>
-    </div>
-    <div class="group-title">Como funciona</div>
-    <div class="panel steps">
-      <div><i>1</i><span>Escolha uma <b>pasta</b> para guardar seus projetos.</span></div>
-      <div><i>2</i><span>Configure um <b>provedor</b> ou entre com sua conta ChatGPT.</span></div>
-      <div><i>3</i><span>Converse: a IA cria e edita arquivos de verdade na sua pasta.</span></div>
-    </div>
-    <div class="panel list">
-      <button class="row" data-act="profile"><span class="ri c-new" data-i="user"></span><span class="rt"><b>Perfil</b><small>Seu nome e avatar</small></span><span class="rc" data-i="chev"></span></button>
-      <button class="row" data-act="notices"><span class="ri c-login" data-i="bell"></span><span class="rt"><b>Notificações</b><small>Avisos de sincronização e do assistente</small></span><span class="rc" data-i="chev"></span></button>
-    </div>
-  </section>
-</main>
-
-<div id="composer">
-  <div id="attach-row"></div>
-  <div class="box">
-    <button class="icon-btn flat" id="attach" aria-label="Anexar arquivo"><span data-i="clip"></span></button>
-    <textarea id="input" rows="1" placeholder="Digite sua mensagem aqui…" autocomplete="off" autocapitalize="sentences"></textarea>
-    <button id="send" aria-label="Enviar"><span data-i="send"></span></button>
   </div>
 </div>
 
-<nav id="tabs">
-  <button data-tab="home" class="active"><span data-i="home"></span><em>Início</em></button>
-  <button data-tab="convs"><span data-i="msgs"></span><em>Conversas</em></button>
-  <button data-tab="projects"><span data-i="folder"></span><em>Projetos</em></button>
-  <button data-tab="settings"><span data-i="gear"></span><em>Configurações</em></button>
-  <button data-tab="more"><span data-i="dots"></span><em>Mais</em></button>
-</nav>
-
-<div id="busy"><div class="busy-card"><img class="logo big" src="img/logo.svg" alt=""><h3 id="busy-title">Preparando</h3><p id="busy-text"></p><div class="bar"><i id="busy-bar"></i></div><span id="busy-pct"></span><button id="busy-retry" class="btn primary" style="display:none;margin-top:18px" type="button">Tentar de novo</button></div></div>
-<div id="sheet-bg"><div id="sheet"><div class="grab"></div><h3 id="sheet-title"></h3><div id="sheet-body"></div><div id="sheet-actions"></div></div></div>
-<div id="toast"></div>
-
+<!-- Vendor Scripts -->
 <script src="vendor/marked.umd.js"></script>
 <script src="vendor/purify.min.js"></script>
 <script src="vendor/highlight.min.js"></script>

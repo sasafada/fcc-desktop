@@ -1,4 +1,4 @@
-package app.fcc.claude
+package app.fcc.ai
 
 import android.app.Activity
 import android.app.AlertDialog
@@ -61,7 +61,7 @@ class MainActivity : Activity(), TerminalViewClient, TerminalSessionClient, Root
         private const val UI_HOST = "appassets.androidplatform.net"
     }
 
-    private enum class DiagMode { SHELL, DOCTOR, LOG, CLAUDE }
+    private enum class DiagMode { SHELL, DOCTOR, LOG, FCC }
 
     private val ui = Handler(Looper.getMainLooper())
     private lateinit var frame: FrameLayout
@@ -88,7 +88,7 @@ class MainActivity : Activity(), TerminalViewClient, TerminalSessionClient, Root
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         fontPx = dp(13)
-        frame = FrameLayout(this).apply { fitsSystemWindows = true; setBackgroundColor(Color.parseColor("#F7F3FF")) }
+        frame = FrameLayout(this).apply { fitsSystemWindows = true; setBackgroundColor(Color.parseColor("#0A0B0F")) }
         setContentView(frame)
         controller = ChatController(this, this)
         setupWeb()
@@ -149,7 +149,7 @@ class MainActivity : Activity(), TerminalViewClient, TerminalSessionClient, Root
             .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this))
             .build()
         web = WebView(this).apply {
-            setBackgroundColor(Color.parseColor("#F7F3FF"))
+            setBackgroundColor(Color.parseColor("#0A0B0F"))
             overScrollMode = View.OVER_SCROLL_NEVER
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = false
@@ -210,7 +210,7 @@ class MainActivity : Activity(), TerminalViewClient, TerminalSessionClient, Root
     }
 
     override fun copy(text: String) {
-        (getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newPlainText("FCC Claude", text))
+        (getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newPlainText("FCC AI", text))
     }
 
     override fun openUrl(url: String) { openExternal(Uri.parse(url)) }
@@ -260,14 +260,14 @@ class MainActivity : Activity(), TerminalViewClient, TerminalSessionClient, Root
 
     override fun openAdmin() {
         if (adminOverlay == null) {
-            val ov = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(Color.WHITE); isClickable = true }
+            val ov = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(Color.parseColor("#14161C")); isClickable = true }
             val bar = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
-                setBackgroundColor(Color.parseColor("#F4F1FF")); setPadding(dp(16), dp(10), dp(10), dp(10))
+                setBackgroundColor(Color.parseColor("#1C1F28")); setPadding(dp(16), dp(10), dp(10), dp(10))
             }
-            bar.addView(TextView(this).apply { text = "Provedores e APIs"; setTextColor(Color.parseColor("#1B1A5E")); setTextSize(TypedValue.COMPLEX_UNIT_SP, 17f); typeface = Typeface.DEFAULT_BOLD },
+            bar.addView(TextView(this).apply { text = "Provedores de IA"; setTextColor(Color.parseColor("#F5F6FA")); setTextSize(TypedValue.COMPLEX_UNIT_SP, 17f); typeface = Typeface.DEFAULT_BOLD },
                 LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
-            bar.addView(pill("Fechar", Color.parseColor("#6D4AFF")) { closeAdmin() })
+            bar.addView(pill("Fechar", Color.parseColor("#6C5CE7")) { closeAdmin() })
             ov.addView(bar, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
             val w = WebView(this).apply {
                 settings.javaScriptEnabled = true
@@ -285,7 +285,7 @@ class MainActivity : Activity(), TerminalViewClient, TerminalSessionClient, Root
                     }
                     override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
                         if (request.isForMainFrame) view.loadDataWithBaseURL(null,
-                            "<html><body style='background:#fff;color:#1B1A5E;font-family:sans-serif;padding:24px'><h3>Assistente indisponível</h3>" +
+                            "<html><body style='background:#14161C;color:#F5F6FA;font-family:sans-serif;padding:24px'><h3>Assistente indisponível</h3>" +
                                 "<p>O assistente interno ainda está iniciando. Aguarde alguns instantes e abra este painel de novo.</p></body></html>",
                             "text/html", "utf-8", null)
                     }
@@ -345,13 +345,13 @@ class MainActivity : Activity(), TerminalViewClient, TerminalSessionClient, Root
     override fun openTerminal() {
         if (termOverlay == null) {
             val p = Properties()
-            p["background"] = "#0F1117"; p["foreground"] = "#ECEEF5"; p["cursor"] = "#8B6CFF"
+            p["background"] = "#0A0B0F"; p["foreground"] = "#F5F6FA"; p["cursor"] = "#6C5CE7"
             TerminalColors.COLOR_SCHEME.updateWith(p)
-            val ov = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(Color.parseColor("#0F1117")); isClickable = true }
+            val ov = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(Color.parseColor("#0A0B0F")); isClickable = true }
             val bar = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(12), dp(8), dp(8), dp(8)) }
-            bar.addView(TextView(this).apply { text = "Terminal (diagnóstico)"; setTextColor(Color.WHITE); setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f); typeface = Typeface.DEFAULT_BOLD },
+            bar.addView(TextView(this).apply { text = "Terminal (diagnóstico)"; setTextColor(Color.parseColor("#F5F6FA")); setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f); typeface = Typeface.DEFAULT_BOLD },
                 LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
-            bar.addView(pill("Fechar", Color.parseColor("#6D4AFF")) { closeTerminal() })
+            bar.addView(pill("Fechar", Color.parseColor("#6C5CE7")) { closeTerminal() })
             ov.addView(bar, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
 
             val tv = TerminalView(this, null).apply {
@@ -367,7 +367,7 @@ class MainActivity : Activity(), TerminalViewClient, TerminalSessionClient, Root
             val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(dp(8), dp(6), dp(8), dp(6)) }
             fun chip(t: String, onClick: () -> Unit) {
                 row.addView(TextView(this).apply {
-                    text = t; setTextColor(Color.WHITE); setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f); gravity = Gravity.CENTER
+                    text = t; setTextColor(Color.parseColor("#F5F6FA")); setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f); gravity = Gravity.CENTER
                     setPadding(dp(13), dp(8), dp(13), dp(8))
                     background = GradientDrawable().apply { setColor(Color.parseColor("#232634")); cornerRadius = dp(14).toFloat() }
                     setOnClickListener { onClick() }
@@ -376,7 +376,7 @@ class MainActivity : Activity(), TerminalViewClient, TerminalSessionClient, Root
             chip("Shell") { startDiag(DiagMode.SHELL) }
             chip("Diagnóstico") { startDiag(DiagMode.DOCTOR) }
             chip("Log") { startDiag(DiagMode.LOG) }
-            chip("Claude (TUI)") { startDiag(DiagMode.CLAUDE) }
+            chip("FCC (TUI)") { startDiag(DiagMode.FCC) }
             chip("Esc") { termSession?.write("\u001b") }
             chip("Tab") { termSession?.write("\t") }
             chip("↑") { termSession?.write("\u001b[A") }
@@ -408,7 +408,7 @@ class MainActivity : Activity(), TerminalViewClient, TerminalSessionClient, Root
                 DiagMode.SHELL -> "exec bash -l"
                 DiagMode.DOCTOR -> "fcc-doctor; echo; echo '[Enter para abrir um shell]'; read; exec bash -l"
                 DiagMode.LOG -> "fcc-ctl status; echo; fcc-ctl logs 80; echo; exec bash -l"
-                DiagMode.CLAUDE -> "exec /usr/local/bin/fcc-app-launch"
+                DiagMode.FCC -> "exec /usr/local/bin/fcc-app-launch"
             }
             val args = Proot.args(this, listOf("${ws.path}:/workspace"), "/workspace", listOf("IS_SANDBOX=1"), listOf("/bin/bash", "-lc", command))
             TerminalSession(Proot.binary(this), filesDir.path, args.toTypedArray(), Proot.env(this), 4000, this)
@@ -433,6 +433,24 @@ class MainActivity : Activity(), TerminalViewClient, TerminalSessionClient, Root
     override fun onColorsChanged(session: TerminalSession) {}
     override fun onTerminalCursorStateChange(state: Boolean) {}
     override fun getTerminalCursorStyle(): Int? = null
+    override fun onSingleTapUp(e: MotionEvent) {
+        val tv = terminalView ?: return
+        tv.requestFocus()
+        (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).showSoftInput(tv, 0)
+    }
+    override fun shouldBackButtonBeMappedToEscape() = false
+    override fun shouldEnforceCharBasedInput() = true
+    override fun shouldUseCtrlSpaceWorkaround() = false
+    override fun shouldUseFnKeyWorkaround() = false
+    override fun onKeyDown(keyCode: Int, e: KeyEvent, session: TerminalSession) = false
+    override fun onKeyUp(keyCode: Int, e: KeyEvent) = false
+    override fun onLongPress(event: MotionEvent) = false
+    override fun readControlKey() = false
+    override fun readAltKey() = false
+    override fun readShiftKey() = false
+    override fun readFnKey() = false
+    override fun onCodePoint(codePoint: Int, ctrlDown: Boolean, session: TerminalSession): Boolean = false
+    override fun onEmulatorSet() {}
 
     // ================================================================ TerminalViewClient
     override fun onScale(scale: Float): Float {
@@ -449,6 +467,7 @@ class MainActivity : Activity(), TerminalViewClient, TerminalSessionClient, Root
     override fun shouldBackButtonBeMappedToEscape() = false
     override fun shouldEnforceCharBasedInput() = true
     override fun shouldUseCtrlSpaceWorkaround() = false
+    override fun shouldUseFnKeyWorkaround() = false
     override fun isTerminalViewSelected() = true
     override fun copyModeChanged(copyMode: Boolean) {}
     override fun onKeyDown(keyCode: Int, e: KeyEvent, session: TerminalSession) = false

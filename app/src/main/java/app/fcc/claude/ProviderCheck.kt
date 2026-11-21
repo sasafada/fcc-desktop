@@ -1,4 +1,4 @@
-package app.fcc.claude
+package app.fcc.ai
 
 import java.net.HttpURLConnection
 import java.net.URL

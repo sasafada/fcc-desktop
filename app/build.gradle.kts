@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "app.fcc.claude"
+    namespace = "app.fcc.ai"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "app.fcc.claude"
+        applicationId = "app.fcc.ai"
         minSdk = 26
         targetSdk = 34
         // Sobe a cada build do GitHub Actions: atualizar por cima sempre é permitido.

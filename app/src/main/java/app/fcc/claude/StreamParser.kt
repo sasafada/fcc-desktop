@@ -1,4 +1,4 @@
-package app.fcc.claude
+package app.fcc.ai
 
 /** Eventos de alto nível extraídos do `claude -p --output-format stream-json`. */
 sealed class ChatEvent {
