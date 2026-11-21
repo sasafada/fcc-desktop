@@ -467,7 +467,6 @@ class MainActivity : Activity(), TerminalViewClient, TerminalSessionClient, Root
     override fun shouldBackButtonBeMappedToEscape() = false
     override fun shouldEnforceCharBasedInput() = true
     override fun shouldUseCtrlSpaceWorkaround() = false
-    override fun shouldUseFnKeyWorkaround() = false
     override fun isTerminalViewSelected() = true
     override fun copyModeChanged(copyMode: Boolean) {}
     override fun onKeyDown(keyCode: Int, e: KeyEvent, session: TerminalSession) = false
