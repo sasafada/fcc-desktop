@@ -459,24 +459,8 @@ class MainActivity : Activity(), TerminalViewClient, TerminalSessionClient, Root
         }
         return scale
     }
-    override fun onSingleTapUp(e: MotionEvent) {
-        val tv = terminalView ?: return
-        tv.requestFocus()
-        (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).showSoftInput(tv, 0)
-    }
-    override fun shouldBackButtonBeMappedToEscape() = false
-    override fun shouldEnforceCharBasedInput() = true
-    override fun shouldUseCtrlSpaceWorkaround() = false
     override fun isTerminalViewSelected() = true
     override fun copyModeChanged(copyMode: Boolean) {}
-    override fun onKeyDown(keyCode: Int, e: KeyEvent, session: TerminalSession) = false
-    override fun onKeyUp(keyCode: Int, e: KeyEvent) = false
-    override fun onLongPress(event: MotionEvent) = false
-    override fun readControlKey() = false
-    override fun readAltKey() = false
-    override fun readShiftKey() = false
-    override fun readFnKey() = false
-    override fun onCodePoint(codePoint: Int, ctrlDown: Boolean, session: TerminalSession): Boolean = false
     override fun onEmulatorSet() {}
 
     override fun logError(tag: String, message: String) { android.util.Log.e(tag, message) }
