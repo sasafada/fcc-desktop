@@ -441,7 +441,6 @@ class MainActivity : Activity(), TerminalViewClient, TerminalSessionClient, Root
     override fun shouldBackButtonBeMappedToEscape() = false
     override fun shouldEnforceCharBasedInput() = true
     override fun shouldUseCtrlSpaceWorkaround() = false
-    override fun shouldUseFnKeyWorkaround() = false
     override fun onKeyDown(keyCode: Int, e: KeyEvent, session: TerminalSession) = false
     override fun onKeyUp(keyCode: Int, e: KeyEvent) = false
     override fun onLongPress(event: MotionEvent) = false
@@ -462,7 +461,6 @@ class MainActivity : Activity(), TerminalViewClient, TerminalSessionClient, Root
     override fun isTerminalViewSelected() = true
     override fun copyModeChanged(copyMode: Boolean) {}
     override fun onEmulatorSet() {}
-
     override fun logError(tag: String, message: String) { android.util.Log.e(tag, message) }
     override fun logWarn(tag: String, message: String) { android.util.Log.w(tag, message) }
     override fun logInfo(tag: String, message: String) { android.util.Log.i(tag, message) }
