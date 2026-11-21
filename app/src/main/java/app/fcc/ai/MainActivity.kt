@@ -449,7 +449,6 @@ class MainActivity : Activity(), TerminalViewClient, TerminalSessionClient, Root
     override fun readShiftKey() = false
     override fun readFnKey() = false
     override fun onCodePoint(codePoint: Int, ctrlDown: Boolean, session: TerminalSession): Boolean = false
-    override fun onEmulatorSet() {}
 
     // ================================================================ TerminalViewClient
     override fun onScale(scale: Float): Float {
@@ -460,7 +459,6 @@ class MainActivity : Activity(), TerminalViewClient, TerminalSessionClient, Root
     }
     override fun isTerminalViewSelected() = true
     override fun copyModeChanged(copyMode: Boolean) {}
-    override fun onEmulatorSet() {}
     override fun logError(tag: String, message: String) { android.util.Log.e(tag, message) }
     override fun logWarn(tag: String, message: String) { android.util.Log.w(tag, message) }
     override fun logInfo(tag: String, message: String) { android.util.Log.i(tag, message) }
