@@ -458,6 +458,7 @@ class MainActivity : Activity(), TerminalViewClient, TerminalSessionClient, Root
         return scale
     }
     override fun isTerminalViewSelected() = true
+    override fun onEmulatorSet() {}
     override fun copyModeChanged(copyMode: Boolean) {}
     override fun logError(tag: String, message: String) { android.util.Log.e(tag, message) }
     override fun logWarn(tag: String, message: String) { android.util.Log.w(tag, message) }
